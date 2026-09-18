@@ -1,0 +1,68 @@
+rule: rules/windows/builtin/win_security_kerberoasting_rc4_ticket_request.yml
+true_positive:
+    - name: RC4 service ticket requested for a user-backed SPN
+      event:
+          _logsource: {product: windows, service: security}
+          EventID: 4769
+          TargetUserName: 'jdoe@contoso.local'
+          ServiceName: 'svc_sql'
+          TicketOptions: '0x40810000'
+          TicketEncryptionType: '0x17'
+          Status: '0x0'
+          IpAddress: '::ffff:10.20.30.41'
+    - name: RC4 ticket for a web service account from a workstation
+      event:
+          _logsource: {product: windows, service: security}
+          EventID: 4769
+          TargetUserName: 'contractor@contoso.local'
+          ServiceName: 'svc_iis_app'
+          TicketOptions: '0x40810000'
+          TicketEncryptionType: '0x17'
+          Status: '0x0'
+          IpAddress: '::ffff:10.20.30.77'
+false_positive:
+    - name: AES256 ticket for the same service account
+      event:
+          _logsource: {product: windows, service: security}
+          EventID: 4769
+          TargetUserName: 'jdoe@contoso.local'
+          ServiceName: 'svc_sql'
+          TicketOptions: '0x40810000'
+          TicketEncryptionType: '0x12'
+          Status: '0x0'
+    - name: RC4 ticket for a computer account SPN
+      event:
+          _logsource: {product: windows, service: security}
+          EventID: 4769
+          TargetUserName: 'jdoe@contoso.local'
+          ServiceName: 'FILESRV01$'
+          TicketOptions: '0x40810000'
+          TicketEncryptionType: '0x17'
+          Status: '0x0'
+    - name: krbtgt ticket request
+      event:
+          _logsource: {product: windows, service: security}
+          EventID: 4769
+          TargetUserName: 'jdoe@contoso.local'
+          ServiceName: 'krbtgt'
+          TicketOptions: '0x40810000'
+          TicketEncryptionType: '0x17'
+          Status: '0x0'
+    - name: Machine account requesting its own service ticket
+      event:
+          _logsource: {product: windows, service: security}
+          EventID: 4769
+          TargetUserName: 'WKS042$@contoso.local'
+          ServiceName: 'svc_sql'
+          TicketOptions: '0x40810000'
+          TicketEncryptionType: '0x17'
+          Status: '0x0'
+    - name: Failed ticket request
+      event:
+          _logsource: {product: windows, service: security}
+          EventID: 4769
+          TargetUserName: 'jdoe@contoso.local'
+          ServiceName: 'svc_sql'
+          TicketOptions: '0x40810000'
+          TicketEncryptionType: '0x17'
+          Status: '0x1F'

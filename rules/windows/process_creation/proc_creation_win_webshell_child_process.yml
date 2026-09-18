@@ -1,0 +1,67 @@
+title: Command Shell Spawned By Web Server Worker Process
+id: 041c2361-2364-48ce-9e00-d853697eb6bf
+status: test
+description: |
+    Detects a command interpreter or common post-exploitation binary spawned as a child of an internet-facing web server worker process.
+    A web server should render content, not launch shells, so this parent/child relationship is one of the highest fidelity indicators that a web shell has been dropped or that an unauthenticated RCE vulnerability has been exploited.
+    The rule covers IIS (w3wp.exe), Apache (httpd.exe), Tomcat, Node and PHP-CGI workers, which between them account for most Windows-hosted application stacks.
+references:
+    - https://attack.mitre.org/techniques/T1505/003/
+    - https://learn.microsoft.com/en-us/iis/troubleshoot/health-and-diagnostic/troubleshooting-iis-worker-process-crash-issues
+author: Stark (StarkOps)
+date: 2026-09-18
+tags:
+    - attack.persistence
+    - attack.t1505.003
+    - attack.execution
+    - attack.t1059
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_parent:
+        ParentImage|endswith:
+            - '\w3wp.exe'
+            - '\httpd.exe'
+            - '\nginx.exe'
+            - '\php-cgi.exe'
+            - '\tomcat.exe'
+            - '\tomcat9.exe'
+            - '\tomcat10.exe'
+            - '\ws_tomcatservice.exe'
+    selection_child:
+        - Image|endswith:
+              - '\cmd.exe'
+              - '\powershell.exe'
+              - '\pwsh.exe'
+              - '\wsl.exe'
+              - '\bash.exe'
+              - '\cscript.exe'
+              - '\wscript.exe'
+              - '\mshta.exe'
+              - '\net.exe'
+              - '\net1.exe'
+              - '\whoami.exe'
+              - '\nltest.exe'
+              - '\systeminfo.exe'
+              - '\certutil.exe'
+              - '\bitsadmin.exe'
+        - OriginalFileName:
+              - 'Cmd.Exe'
+              - 'PowerShell.EXE'
+              - 'pwsh.dll'
+              - 'certutil.exe'
+              - 'bitsadmin.exe'
+    filter_main_iis_compilation:
+        # IIS legitimately shells out to csc.exe through cmd.exe when compiling ASP.NET pages on first request.
+        Image|endswith: '\cmd.exe'
+        CommandLine|contains:
+            - '\Temporary ASP.NET Files\'
+            - 'csc.exe'
+            - 'vbc.exe'
+    condition: selection_parent and selection_child and not 1 of filter_main_*
+falsepositives:
+    - Application code that deliberately invokes system utilities, most often in legacy intranet applications; baseline the command lines before enabling at high severity.
+    - Monitoring or deployment agents that run health checks through the worker process account.
+    - First-request ASP.NET compilation on servers where the temporary files path differs from the default.
+level: high

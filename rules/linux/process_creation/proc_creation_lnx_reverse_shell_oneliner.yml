@@ -1,0 +1,55 @@
+title: Interactive Reverse Shell One-Liner Execution
+id: 0ad84f29-6b55-43be-b14a-3ba8f3ba22d7
+status: test
+description: |
+    Detects the command line patterns used by the handful of reverse shell one-liners that appear in almost every public cheat sheet and exploitation framework.
+    Three families are covered: bash's /dev/tcp pseudo-device redirection, netcat invoked with an executable payload or a FIFO back-channel, and scripting language sockets that duplicate file descriptors onto an interactive shell.
+    These patterns are structural rather than string-specific, so they survive the trivial obfuscation of renaming variables or changing the callback address, but they will not catch a reverse shell delivered as a compiled binary or as base64-decoded script content.
+references:
+    - https://attack.mitre.org/techniques/T1059/004/
+    - https://gtfobins.github.io/
+    - https://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet
+author: Stark (StarkOps)
+date: 2026-09-18
+tags:
+    - attack.execution
+    - attack.t1059.004
+    - attack.command-and-control
+    - attack.t1071.001
+logsource:
+    product: linux
+    category: process_creation
+detection:
+    selection_devtcp:
+        CommandLine|contains:
+            - '/dev/tcp/'
+            - '/dev/udp/'
+    selection_netcat_exec:
+        CommandLine|contains|all:
+            - 'nc '
+            - ' -e '
+    selection_netcat_fifo:
+        CommandLine|contains|all:
+            - 'mkfifo'
+            - 'nc '
+    selection_script_socket:
+        CommandLine|contains|all:
+            - 'socket.AF_INET'
+            - 'dup2'
+    selection_perl_socket:
+        CommandLine|contains|all:
+            - 'Socket'
+            - 'STDIN'
+            - 'exec'
+            - 'inet_aton'
+    filter_main_redirect_to_file:
+        # /dev/tcp is also used by benign scripts for TCP port checks that discard output.
+        CommandLine|contains:
+            - '/dev/tcp/ >/dev/null'
+            - 'timeout 1 bash -c'
+    condition: 1 of selection_* and not 1 of filter_main_*
+falsepositives:
+    - Health check and service discovery scripts that use bash /dev/tcp to test whether a port is open.
+    - Administrators and CI pipelines that legitimately use netcat to move files between hosts.
+    - Security tooling and training material executed on purpose in a lab segment.
+level: high

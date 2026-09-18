@@ -1,0 +1,42 @@
+title: AWS Access Key Created For A Different IAM User
+id: 100ce972-9ac3-4d63-8be3-e279acf92315
+status: test
+description: |
+    Detects a successful CreateAccessKey call where the principal making the request is not the IAM user the key is created for.
+    Minting a long-lived access key for another identity is a standard persistence move after an initial compromise, because the key survives password resets, MFA enrolment and session revocation, and it is easy to miss during an incident that focuses only on the originally compromised identity.
+    A user creating a key for themselves is routine, so the comparison between userIdentity.userName and requestParameters.userName is what carries the signal; CloudTrail omits the parameter entirely when a caller acts on itself, which is handled as a second exclusion.
+    Note that this rule uses a field-to-field comparison, which some query languages cannot express natively - see docs/backend-support.md for how the pipeline reports that.
+references:
+    - https://attack.mitre.org/techniques/T1098/001/
+    - https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateAccessKey.html
+    - https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html
+author: Stark (StarkOps)
+date: 2026-09-18
+tags:
+    - attack.persistence
+    - attack.t1098.001
+logsource:
+    product: aws
+    service: cloudtrail
+detection:
+    selection:
+        eventSource: 'iam.amazonaws.com'
+        eventName: 'CreateAccessKey'
+        errorCode: null
+        # Absent when the caller acts on itself, which is the routine case.
+        requestParameters.userName|exists: true
+    filter_main_self_service:
+        requestParameters.userName|fieldref: 'userIdentity.userName'
+    filter_optional_rotation_automation:
+        # Replace with the automation principals allowed to mint keys for other identities.
+        userIdentity.arn|contains:
+            - ':assumed-role/AccessKeyRotationLambda/'
+            - ':user/terraform-ci'
+    # The field-reference filter is kept as its own NOT term: several backends
+    # can negate a field comparison but cannot OR one into a larger expression.
+    condition: selection and not filter_main_self_service and not 1 of filter_optional_*
+falsepositives:
+    - Administrators provisioning credentials for a new hire or a service account through a ticketed process.
+    - Key rotation automation; these principals belong in the optional filter rather than in an analyst's triage queue.
+    - Infrastructure-as-code runs that create programmatic credentials as part of a managed workflow.
+level: medium

@@ -1,0 +1,86 @@
+rule: rules/cloud/aws/aws_iam_backdoor_access_key_creation.yml
+true_positive:
+    - name: Compromised user mints a key for a privileged account
+      event:
+          _logsource: {product: aws, service: cloudtrail}
+          eventSource: 'iam.amazonaws.com'
+          eventName: 'CreateAccessKey'
+          eventTime: '2026-09-18T02:14:11Z'
+          userIdentity:
+              type: 'IAMUser'
+              userName: 'dev-intern'
+              arn: 'arn:aws:iam::123456789012:user/dev-intern'
+          requestParameters:
+              userName: 'admin-breakglass'
+          sourceIPAddress: '198.51.100.20'
+    - name: Assumed role creates a key for an unrelated user
+      event:
+          _logsource: {product: aws, service: cloudtrail}
+          eventSource: 'iam.amazonaws.com'
+          eventName: 'CreateAccessKey'
+          userIdentity:
+              type: 'AssumedRole'
+              userName: 'ci-deployer'
+              arn: 'arn:aws:sts::123456789012:assumed-role/ci-deployer/session'
+          requestParameters:
+              userName: 'finance-reporting'
+          sourceIPAddress: '203.0.113.9'
+false_positive:
+    - name: User rotates their own access key
+      event:
+          _logsource: {product: aws, service: cloudtrail}
+          eventSource: 'iam.amazonaws.com'
+          eventName: 'CreateAccessKey'
+          userIdentity:
+              type: 'IAMUser'
+              userName: 'jdoe'
+              arn: 'arn:aws:iam::123456789012:user/jdoe'
+          requestParameters:
+              userName: 'jdoe'
+          sourceIPAddress: '10.0.0.5'
+    - name: Implicit self-service call with no userName parameter
+      event:
+          _logsource: {product: aws, service: cloudtrail}
+          eventSource: 'iam.amazonaws.com'
+          eventName: 'CreateAccessKey'
+          userIdentity:
+              type: 'IAMUser'
+              userName: 'jdoe'
+              arn: 'arn:aws:iam::123456789012:user/jdoe'
+          requestParameters: {}
+          sourceIPAddress: '10.0.0.5'
+    - name: Approved rotation automation
+      event:
+          _logsource: {product: aws, service: cloudtrail}
+          eventSource: 'iam.amazonaws.com'
+          eventName: 'CreateAccessKey'
+          userIdentity:
+              type: 'AssumedRole'
+              userName: 'AccessKeyRotationLambda'
+              arn: 'arn:aws:sts::123456789012:assumed-role/AccessKeyRotationLambda/rotate'
+          requestParameters:
+              userName: 'svc-reporting'
+          sourceIPAddress: '10.0.0.9'
+    - name: Failed CreateAccessKey call
+      event:
+          _logsource: {product: aws, service: cloudtrail}
+          eventSource: 'iam.amazonaws.com'
+          eventName: 'CreateAccessKey'
+          errorCode: 'AccessDenied'
+          userIdentity:
+              type: 'IAMUser'
+              userName: 'dev-intern'
+              arn: 'arn:aws:iam::123456789012:user/dev-intern'
+          requestParameters:
+              userName: 'admin-breakglass'
+    - name: Unrelated IAM read call
+      event:
+          _logsource: {product: aws, service: cloudtrail}
+          eventSource: 'iam.amazonaws.com'
+          eventName: 'ListAccessKeys'
+          userIdentity:
+              type: 'IAMUser'
+              userName: 'jdoe'
+              arn: 'arn:aws:iam::123456789012:user/jdoe'
+          requestParameters:
+              userName: 'admin-breakglass'

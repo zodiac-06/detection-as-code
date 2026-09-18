@@ -1,0 +1,54 @@
+name: Deploy to Sentinel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "rules/**"
+      - "tools/convert.py"
+      - "deploy/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never let two deployments race for the same analytics rules.
+  group: sentinel-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Publish analytics rules
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - run: python -m pip install --upgrade pip && pip install -r requirements.txt
+
+      # The gate: nothing reaches production that has not passed the same
+      # checks a pull request had to pass.
+      - name: Re-run the full gate
+        run: |
+          python tools/validate_rules.py
+          pytest tests/ -q
+
+      - name: Compile queries
+        run: python tools/convert.py
+
+      - name: Deploy
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          SENTINEL_WORKSPACE: ${{ secrets.SENTINEL_WORKSPACE }}
+        run: python deploy/sentinel.py

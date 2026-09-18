@@ -1,0 +1,60 @@
+title: MCP Server Configuration Modified By Uncommon Process
+id: 08e440eb-b3ed-41f5-beaf-f308df41cd5f
+status: experimental
+description: |
+    Detects the creation or modification of Model Context Protocol (MCP) server configuration files by a process that is not one of the AI assistant or IDE binaries that legitimately own them.
+    MCP configuration files declare the external servers an AI agent is allowed to launch, together with the command line and environment variables used to start them.
+    An attacker with write access to one of these files can register a malicious MCP server that the agent will execute on the user's behalf the next time it starts, which yields code execution and persistence under a trusted parent process.
+    The same primitive also allows silent exfiltration, because a poisoned server sits in the path of every prompt, file and credential the agent handles.
+    This rule deliberately alerts on the writing process rather than on the content of the file, because the configuration is plain JSON and its malicious form is indistinguishable from a legitimate one without context.
+references:
+    - https://modelcontextprotocol.io/docs/develop/connect-local-servers
+    - https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks
+    - https://www.wiz.io/blog/mcp-security-research-briefing
+    - https://attack.mitre.org/techniques/T1546/
+author: Stark (StarkOps)
+date: 2026-09-18
+tags:
+    - attack.persistence
+    - attack.execution
+    - attack.t1546
+    - attack.t1059
+logsource:
+    product: windows
+    category: file_event
+detection:
+    selection_user_scope:
+        TargetFilename|endswith:
+            - '\Claude\claude_desktop_config.json'
+            - '\.cursor\mcp.json'
+            - '\.vscode\mcp.json'
+            - '\.codeium\windsurf\mcp_config.json'
+            - '\Code\User\mcp.json'
+            - '\.gemini\settings.json'
+    selection_project_scope:
+        TargetFilename|endswith:
+            - '\.mcp.json'
+            - '\.claude.json'
+    filter_main_owning_apps:
+        Image|endswith:
+            - '\Claude.exe'
+            - '\Code.exe'
+            - '\Code - Insiders.exe'
+            - '\Cursor.exe'
+            - '\windsurf.exe'
+            - '\claude.exe'
+            - '\gemini.exe'
+    filter_optional_installers:
+        # Package managers write these files during a supported "add server" flow.
+        # Remove this filter in environments where MCP servers are centrally managed.
+        Image|endswith:
+            - '\node.exe'
+            - '\npm.exe'
+            - '\uv.exe'
+            - '\uvx.exe'
+    condition: 1 of selection_* and not 1 of filter_*
+falsepositives:
+    - Backup, synchronisation and endpoint management agents that restore or template developer configuration files.
+    - Dotfile managers and provisioning scripts (git, chezmoi, PowerShell profile scripts) that lay down an MCP configuration as part of onboarding.
+    - Newly released AI assistants and IDEs whose binaries are not yet present in the filter list; add them once verified.
+level: medium

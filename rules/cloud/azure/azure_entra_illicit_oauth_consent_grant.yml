@@ -1,0 +1,45 @@
+title: Entra ID Consent Granted To Application With High Privilege Scopes
+id: bdc99822-cd1f-4e1c-9fb0-67fe2f4d1868
+status: experimental
+description: |
+    Detects an OAuth consent grant in Entra ID that hands an application one of the delegated scopes used to read mail, read files or maintain offline access.
+    Illicit consent phishing replaces credential theft entirely: the victim authenticates legitimately against Microsoft, MFA succeeds, and the attacker walks away with a refresh token scoped to the mailbox.
+    Because no password is stolen, a reset does not evict the attacker; only revoking the service principal's grant does.
+    The combination of offline_access with a Mail or Files scope is the shape worth alerting on, since it is what turns a one-time consent into durable access.
+references:
+    - https://attack.mitre.org/techniques/T1528/
+    - https://learn.microsoft.com/en-us/defender-cloud-apps/investigate-risky-oauth
+    - https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/manage-consent-requests
+author: Stark (StarkOps)
+date: 2026-09-18
+tags:
+    - attack.credential-access
+    - attack.t1528
+    - attack.persistence
+logsource:
+    product: azure
+    service: auditlogs
+detection:
+    selection_operation:
+        properties.message:
+            - 'Consent to application'
+            - 'Add delegated permission grant'
+        Result: 'success'
+    selection_offline:
+        properties.targetResources.modifiedProperties.newValue|contains: 'offline_access'
+    selection_sensitive_scope:
+        properties.targetResources.modifiedProperties.newValue|contains:
+            - 'Mail.Read'
+            - 'Mail.ReadWrite'
+            - 'Mail.Send'
+            - 'Files.Read.All'
+            - 'Files.ReadWrite.All'
+            - 'Sites.Read.All'
+            - 'Directory.Read.All'
+            - 'User.ReadWrite.All'
+    condition: selection_operation and selection_offline and selection_sensitive_scope
+falsepositives:
+    - Approved SaaS integrations being rolled out; these should be consented to by an administrator once and then allow-listed by application ID.
+    - Internal line-of-business applications registered by the organisation's own developers.
+    - Migration and backup tooling that genuinely requires mailbox-wide delegated access.
+level: high

@@ -1,0 +1,72 @@
+rule: rules/cloud/azure/azure_entra_illicit_oauth_consent_grant.yml
+true_positive:
+    - name: User consents to a multi-tenant app requesting mail access and offline access
+      event:
+          _logsource: {product: azure, service: auditlogs}
+          Result: 'success'
+          properties:
+              message: 'Consent to application'
+              initiatedBy:
+                  user:
+                      userPrincipalName: 'jdoe@contoso.com'
+              targetResources:
+                  - displayName: 'Quarterly Reports Viewer'
+                    modifiedProperties:
+                        - displayName: 'ConsentAction.Permissions'
+                          newValue: 'Scope: Mail.Read offline_access User.Read'
+    - name: Delegated permission grant with file and offline access
+      event:
+          _logsource: {product: azure, service: auditlogs}
+          Result: 'success'
+          properties:
+              message: 'Add delegated permission grant'
+              targetResources:
+                  - displayName: 'DocSync Helper'
+                    modifiedProperties:
+                        - displayName: 'DelegatedPermissionGrant.Scope'
+                          newValue: 'Files.ReadWrite.All offline_access'
+false_positive:
+    - name: Consent to an app with only sign-in scopes
+      event:
+          _logsource: {product: azure, service: auditlogs}
+          Result: 'success'
+          properties:
+              message: 'Consent to application'
+              targetResources:
+                  - displayName: 'Contoso Intranet'
+                    modifiedProperties:
+                        - displayName: 'ConsentAction.Permissions'
+                          newValue: 'Scope: User.Read openid profile offline_access'
+    - name: Mail scope granted without offline access
+      event:
+          _logsource: {product: azure, service: auditlogs}
+          Result: 'success'
+          properties:
+              message: 'Consent to application'
+              targetResources:
+                  - displayName: 'Mail Triage Add-in'
+                    modifiedProperties:
+                        - displayName: 'ConsentAction.Permissions'
+                          newValue: 'Scope: Mail.Read User.Read'
+    - name: Failed consent operation
+      event:
+          _logsource: {product: azure, service: auditlogs}
+          Result: 'failure'
+          properties:
+              message: 'Consent to application'
+              targetResources:
+                  - displayName: 'Quarterly Reports Viewer'
+                    modifiedProperties:
+                        - displayName: 'ConsentAction.Permissions'
+                          newValue: 'Scope: Mail.Read offline_access'
+    - name: Unrelated application registration change
+      event:
+          _logsource: {product: azure, service: auditlogs}
+          Result: 'success'
+          properties:
+              message: 'Update application'
+              targetResources:
+                  - displayName: 'Quarterly Reports Viewer'
+                    modifiedProperties:
+                        - displayName: 'AppAddress'
+                          newValue: 'https://app.example.com/callback'

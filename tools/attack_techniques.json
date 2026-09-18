@@ -1,0 +1,32 @@
+{
+  "_comment": "Local cache of the ATT&CK techniques referenced by this repository. Refresh with 'python tools/coverage_map.py --refresh' on a host that can reach MITRE's attack-stix-data repository.",
+  "_source": "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack.json",
+  "_version": "ATT&CK Enterprise v17",
+  "tactics": {
+    "initial-access": "Initial Access",
+    "execution": "Execution",
+    "persistence": "Persistence",
+    "privilege-escalation": "Privilege Escalation",
+    "defense-evasion": "Defense Evasion",
+    "credential-access": "Credential Access",
+    "discovery": "Discovery",
+    "lateral-movement": "Lateral Movement",
+    "collection": "Collection",
+    "command-and-control": "Command and Control",
+    "exfiltration": "Exfiltration",
+    "impact": "Impact"
+  },
+  "techniques": {
+    "T1059": "Command and Scripting Interpreter",
+    "T1059.001": "Command and Scripting Interpreter: PowerShell",
+    "T1059.003": "Command and Scripting Interpreter: Windows Command Shell",
+    "T1059.004": "Command and Scripting Interpreter: Unix Shell",
+    "T1059.007": "Command and Scripting Interpreter: JavaScript",
+    "T1071.001": "Application Layer Protocol: Web Protocols",
+    "T1098.001": "Account Manipulation: Additional Cloud Credentials",
+    "T1505.003": "Server Software Component: Web Shell",
+    "T1528": "Steal Application Access Token",
+    "T1546": "Event Triggered Execution",
+    "T1558.003": "Steal or Forge Kerberos Tickets: Kerberoasting"
+  }
+}

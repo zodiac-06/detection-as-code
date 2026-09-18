@@ -1,0 +1,41 @@
+title: Kerberoasting - RC4 Service Ticket Requested For User Account
+id: 3b86f598-b8bb-4a02-8d12-57b97cf64ad9
+status: test
+description: |
+    Detects a Kerberos service ticket (TGS-REQ, event 4769) issued with RC4-HMAC encryption for a service principal that belongs to a user account rather than a computer account.
+    Kerberoasting works by requesting tickets for service accounts and cracking them offline, and attackers force RC4 because it is derived directly from the account's NTLM hash and therefore cracks far faster than AES.
+    Modern domains issue AES tickets by default, so an RC4 request for a user-backed SPN is anomalous on its own; a burst of them from one source in a short window is close to conclusive.
+    Tune by baselining the legacy services in the environment that genuinely still negotiate RC4, then exclude those service names explicitly.
+references:
+    - https://attack.mitre.org/techniques/T1558/003/
+    - https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4769
+    - https://redcanary.com/threat-detection-report/techniques/kerberoasting/
+author: Stark (StarkOps)
+date: 2026-09-18
+tags:
+    - attack.credential-access
+    - attack.t1558.003
+logsource:
+    product: windows
+    service: security
+detection:
+    selection:
+        EventID: 4769
+        TicketOptions: '0x40810000'
+        TicketEncryptionType: '0x17'
+        Status: '0x0'
+    filter_main_computer_accounts:
+        ServiceName|endswith: '$'
+    filter_main_krbtgt:
+        ServiceName: 'krbtgt'
+    filter_main_machine_requestor:
+        # The requesting account is logged as user@REALM, so a machine account
+        # ends with "$" only when the realm suffix is absent.
+        - TargetUserName|endswith: '$'
+        - TargetUserName|contains: '$@'
+    condition: selection and not 1 of filter_main_*
+falsepositives:
+    - Legacy applications and appliances that only support RC4, most commonly older Java and third-party SSO integrations.
+    - Domains that have not yet completed an AES migration, where this rule will be noisy until the msDS-SupportedEncryptionTypes attribute is set on service accounts.
+    - Backup and vulnerability scanning tools that enumerate SPNs as part of a scheduled assessment.
+level: medium

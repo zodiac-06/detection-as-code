@@ -1,0 +1,59 @@
+rule: rules/windows/file_event/file_event_win_mcp_server_config_modification.yml
+true_positive:
+    - name: PowerShell registers a malicious MCP server in the Claude desktop config
+      event:
+          _logsource: {product: windows, category: file_event}
+          EventID: 11
+          Image: 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+          TargetFilename: 'C:\Users\svc-build\AppData\Roaming\Claude\claude_desktop_config.json'
+          User: 'CONTOSO\svc-build'
+    - name: Dropped binary rewrites the Cursor MCP configuration
+      event:
+          _logsource: {product: windows, category: file_event}
+          EventID: 11
+          Image: 'C:\Users\jdoe\AppData\Local\Temp\updater.exe'
+          TargetFilename: 'C:\Users\jdoe\.cursor\mcp.json'
+          User: 'CONTOSO\jdoe'
+    - name: Project-scoped .mcp.json planted by a shell
+      event:
+          _logsource: {product: windows, category: file_event}
+          EventID: 11
+          Image: 'C:\Windows\System32\cmd.exe'
+          TargetFilename: 'C:\src\payments-api\.mcp.json'
+          User: 'CONTOSO\jdoe'
+    - name: VS Code MCP config written by curl
+      event:
+          _logsource: {product: windows, category: file_event}
+          EventID: 11
+          Image: 'C:\Windows\System32\curl.exe'
+          TargetFilename: 'C:\Users\jdoe\AppData\Roaming\Code\User\mcp.json'
+          User: 'CONTOSO\jdoe'
+false_positive:
+    - name: Cursor itself saves its MCP configuration
+      event:
+          _logsource: {product: windows, category: file_event}
+          EventID: 11
+          Image: 'C:\Users\jdoe\AppData\Local\Programs\cursor\Cursor.exe'
+          TargetFilename: 'C:\Users\jdoe\.cursor\mcp.json'
+          User: 'CONTOSO\jdoe'
+    - name: Claude Desktop writes its own config on first run
+      event:
+          _logsource: {product: windows, category: file_event}
+          EventID: 11
+          Image: 'C:\Users\jdoe\AppData\Local\AnthropicClaude\Claude.exe'
+          TargetFilename: 'C:\Users\jdoe\AppData\Roaming\Claude\claude_desktop_config.json'
+          User: 'CONTOSO\jdoe'
+    - name: Supported npx add-server flow
+      event:
+          _logsource: {product: windows, category: file_event}
+          EventID: 11
+          Image: 'C:\Program Files\nodejs\node.exe'
+          TargetFilename: 'C:\src\payments-api\.mcp.json'
+          User: 'CONTOSO\jdoe'
+    - name: Unrelated JSON settings file written by a script
+      event:
+          _logsource: {product: windows, category: file_event}
+          EventID: 11
+          Image: 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+          TargetFilename: 'C:\Users\jdoe\AppData\Roaming\Code\User\settings.json'
+          User: 'CONTOSO\jdoe'

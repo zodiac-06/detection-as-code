@@ -1,0 +1,12 @@
+# Versions verified against the upstream sources this repository was built on.
+# Lower bounds rather than exact pins, so that a security fix in pySigma is not
+# blocked by this file; run `pip freeze > requirements.lock.txt` in CI if you
+# need byte-for-byte reproducibility of the generated queries.
+pysigma>=1.5.0,<2
+pysigma-backend-splunk>=2.1.0,<3
+pysigma-backend-elasticsearch>=2.1.1,<3
+pysigma-backend-kusto>=1.0.1,<2
+pysigma-pipeline-sysmon>=2.0.0,<3
+pysigma-pipeline-windows>=1.2.0,<2
+pyyaml>=6.0
+pytest>=8.0
