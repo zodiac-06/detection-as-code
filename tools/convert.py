@@ -92,7 +92,7 @@ def convert_all(fail_on_unsupported: bool = False) -> int:
         results: dict[str, object] = {}
 
         for path in rule_files():
-            rel = str(path.relative_to(REPO_ROOT))
+            rel = path.relative_to(REPO_ROOT).as_posix()
             collection = SigmaCollection.from_yaml(path.read_text(encoding="utf-8"))
             rule = collection[0]
             product = rule.logsource.product
@@ -125,14 +125,14 @@ def convert_all(fail_on_unsupported: bool = False) -> int:
                 continue
 
             query_file = out_dir / (path.stem + ".txt")
-            query_file.write_text("\n".join(queries) + "\n", encoding="utf-8")
+            query_file.write_text("\n".join(queries) + "\n", encoding="utf-8", newline="\n")
             results[rel] = {"status": "ok", "queries": queries}
             print(f"[ OK ] {target.name:22} {rel}")
 
         report[target.name] = results
 
     (BUILD_DIR / "conversion-report.json").write_text(
-        json.dumps(report, indent=2, sort_keys=True), encoding="utf-8"
+        json.dumps(report, indent=2, sort_keys=True), encoding="utf-8", newline="\n"
     )
     print(f"\nerrors: {hard_errors}, unsupported: {unsupported}")
     print(f"report written to {(BUILD_DIR / 'conversion-report.json').relative_to(REPO_ROOT)}")

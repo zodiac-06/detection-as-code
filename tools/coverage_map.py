@@ -55,7 +55,7 @@ def refresh_cache() -> None:
             if ref.get("source_name") == "mitre-attack" and ref.get("external_id", "").startswith("T"):
                 techniques[ref["external_id"]] = obj.get("name", "")
     data["techniques"] = dict(sorted(techniques.items()))
-    CACHE.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    CACHE.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"cached {len(techniques)} techniques")
 
 
@@ -73,7 +73,7 @@ def collect() -> tuple[dict[str, list[dict]], dict[str, list[dict]], list[str]]:
         raw = yaml.safe_load(path.read_text(encoding="utf-8"))
         entry = {
             "title": raw.get("title", path.stem),
-            "path": str(path.relative_to(REPO_ROOT)),
+            "path": path.relative_to(REPO_ROOT).as_posix(),
             "level": raw.get("level", "unknown"),
             "status": raw.get("status", "unknown"),
         }
@@ -129,7 +129,7 @@ def write_markdown(by_technique: dict[str, list[dict]], by_tactic: dict[str, lis
         "",
     ]
     DOC_OUT.parent.mkdir(parents=True, exist_ok=True)
-    DOC_OUT.write_text("\n".join(lines), encoding="utf-8")
+    DOC_OUT.write_text("\n".join(lines), encoding="utf-8", newline="\n")
     print(f"wrote {DOC_OUT.relative_to(REPO_ROOT)}")
 
 
@@ -152,7 +152,7 @@ def write_layer(by_technique: dict[str, list[dict]]) -> None:
         "legendItems": [],
     }
     LAYER_OUT.parent.mkdir(parents=True, exist_ok=True)
-    LAYER_OUT.write_text(json.dumps(layer, indent=2) + "\n", encoding="utf-8")
+    LAYER_OUT.write_text(json.dumps(layer, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"wrote {LAYER_OUT.relative_to(REPO_ROOT)}")
 
 
