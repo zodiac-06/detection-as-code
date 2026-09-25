@@ -102,6 +102,10 @@ The GitHub Actions workflows wire the same commands together: `ci.yml` runs
 lint, tests and compilation on every pull request and posts a per-backend
 summary, and `deploy.yml` re-runs the entire gate on merge to `main` before
 touching production, with a concurrency group so two deployments never race.
+The deploy job is gated behind the repository variable
+`ENABLE_SENTINEL_DEPLOY` — it skips cleanly until that is set to `true`, so
+merges to `main` do not fail against a Sentinel workspace that does not exist
+yet. Set the variable once the workspace and Azure credentials are in place.
 
 ## Writing a new rule
 
