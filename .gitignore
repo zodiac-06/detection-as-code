@@ -7,3 +7,19 @@ venv/
 .env
 *.egg-info/
 .DS_Store
+
+# Secrets — deploy/sentinel.py talks to Azure
+.env.*
+*.pem
+*.pfx
+.azure/
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+
+# Test / tooling output
+.coverage
+htmlcov/
+*.log

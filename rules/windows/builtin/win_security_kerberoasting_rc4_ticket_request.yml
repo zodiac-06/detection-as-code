@@ -10,7 +10,7 @@ references:
     - https://attack.mitre.org/techniques/T1558/003/
     - https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4769
     - https://redcanary.com/threat-detection-report/techniques/kerberoasting/
-author: Stark (StarkOps)
+author: Purushotham R (Zodiac)
 date: 2026-09-18
 tags:
     - attack.credential-access

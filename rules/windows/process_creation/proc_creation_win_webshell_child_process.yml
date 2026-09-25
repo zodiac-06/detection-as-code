@@ -8,7 +8,7 @@ description: |
 references:
     - https://attack.mitre.org/techniques/T1505/003/
     - https://learn.microsoft.com/en-us/iis/troubleshoot/health-and-diagnostic/troubleshooting-iis-worker-process-crash-issues
-author: Stark (StarkOps)
+author: Purushotham R (Zodiac)
 date: 2026-09-18
 tags:
     - attack.persistence

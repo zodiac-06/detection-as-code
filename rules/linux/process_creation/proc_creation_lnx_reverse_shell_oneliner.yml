@@ -9,7 +9,7 @@ references:
     - https://attack.mitre.org/techniques/T1059/004/
     - https://gtfobins.github.io/
     - https://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet
-author: Stark (StarkOps)
+author: Purushotham R (Zodiac)
 date: 2026-09-18
 tags:
     - attack.execution

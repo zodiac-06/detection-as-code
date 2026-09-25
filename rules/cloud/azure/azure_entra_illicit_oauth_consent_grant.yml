@@ -10,7 +10,7 @@ references:
     - https://attack.mitre.org/techniques/T1528/
     - https://learn.microsoft.com/en-us/defender-cloud-apps/investigate-risky-oauth
     - https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/manage-consent-requests
-author: Stark (StarkOps)
+author: Purushotham R (Zodiac)
 date: 2026-09-18
 tags:
     - attack.credential-access
